@@ -65,3 +65,31 @@ P2 = P1; %中继上采用同样的发射功率.
 此处，信道功率增益为$E_{\rho_i}\{\rho_i\}=\alpha_i\beta_i$, 转化成分贝单位后和信噪比相减，得到发射功率。注意，信道增益功率为负数。
 
 
+```matlab
+kappa1 = 0.1; %第一跳收发机的误差向量幅度
+kappa2 = 0.1; %第二跳收发机得误差向量幅度
+d = kappa1^2+kappa2^2+kappa1^2*kappa2^2; %Recurring function of kappa1 and kappa2
+```
+$d$是论文中公式（13）和（14）中的表达式 $d=\kappa_1^2+\kappa2^2+\kappa1^2\kappa2^2$
+
+```matlab
+
+%蒙特卡洛仿真中断概率的结果存储变量初始化：放大转发情形
+OP_ideal_af_f = zeros(length(x),length(P1)); %AF固定增益，理想硬件的中断概率
+OP_ideal_af_v = zeros(length(x),length(P1)); %AF变增益，理想硬件的中断概率
+
+OP_nonideal_af_f = zeros(length(x),length(P1)); %AF固定增益，非理想硬件的中断概率
+OP_nonideal_af_v = zeros(length(x),length(P1)); %AF变增益，非理想硬件的中断概率
+
+
+%蒙特卡洛仿真中断概率的结果存储变量初始化：译码转发情形
+OP_ideal_df = zeros(length(x),length(P1));    %DF理想硬件的中断概率
+OP_nonideal_df = zeros(length(x),length(P1)); %DF非理想硬件的中断概率
+
+```
+
+%用于计算中继的平均衰落功率$\mathbb{E}_{\rho_1}[\rho_1]=\alpha_1\beta_1$
+```matlab
+exp_rho1 = alpha1*beta1;
+```
+
