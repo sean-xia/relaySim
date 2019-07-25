@@ -93,3 +93,79 @@ OP_nonideal_df = zeros(length(x),length(P1)); %DF非理想硬件的中断概率
 exp_rho1 = alpha1*beta1;
 ```
 
+以下用蒙特卡洛仿真计算中断概率。假设
+* 源节点发射功率变化以实现设定的平均信噪比
+* 中继节点发射功率和源节点采用相同的变化方式
+
+```matlab
+
+for p = 1:length(P1)
+    
+    G_ideal_f = sqrt(P2(p)/(P1(p)*exp_rho1 + N1));     % (1)Ideal case Fixed Gain
+    G_nonideal_f = sqrt(P2(p)/(P1(p)*exp_rho1*(1 + kappa1^2) + N1));   % (2)With impairments Fixed Gain
+    
+
+```
+(1) 计算固定增益，理想收发机情况下的放大因子，即文中（15）式
+$$G_{id}^f=\sqrt{\frac{P_2}{P_1\mathbb{E}_{\rho_1}\{\rho_1\}+N_1}}$$
+
+(2)计算固定增益，非理想收发机情况下的放大因子，即文中（11）式
+$$G_{ni}^f=\sqrt{\frac{P_2}{P_1\mathbb{E}_{\rho_1}\{\rho_1\}(1+\kappa_1^2)+N_1}}$$
+
+
+```matlab
+    %蒙特卡洛仿真
+    for kk = 1:nbrOfIterations
+        
+        rho1 = RHO(1,kk);  %提取每次信道实现的信道增益
+        rho2 = RHO(2,kk);
+        
+        %计算AF模式下的端到端信噪失真比（SNDR）
+        SNDR_ideal_af_f = (rho1*rho2)/(rho2*N1/P1(p) + N2/G_ideal_f^2/P1(p)); %（3）Ideal hardware, fixed gain
+        SNDR_ideal_af_v = (rho1*rho2)/(rho2*N1/P1(p) + N2*(rho1/P2(p)+N1/P2(p)/P1(p))); （4）%Ideal hardware, variable gain
+        
+        SNDR_nonideal_af_f = (rho1*rho2)/(rho1*rho2*d + N1*rho2/P1(p) *(1+kappa2^2) + N2/G_nonideal_f^2/P1(p)); %（5）Non-ideal hardware, fixed gain
+        SNDR_nonideal_af_v = (rho1*rho2)/(rho1*rho2*d + rho1*N2*(1+kappa1^2)/P2(p) + rho2*N1*(1+kappa2^2)/P1(p) + N1*N2/P1(p)/P2(p));  %（6）Non-ideal hardware, variable gain
+```
+(3)计算理想硬件固定增益的SNDR，文中（16）式
+(4)计算理想硬件变化增益的SNDR，文中（16）式
+(5)计算非理想硬件，固定增益的SNDR，文中（13）式
+(6)计算非理想硬件，变化增益的SNDR，文中（14）式
+```matlab
+        %Compute signal-to-noise-and-distortion ratios (SNDRs) with DF relaying
+        SNDR_ideal_df = min([(rho1*P1(p))/N1,(rho2*P2(p))/N2]); %Ideal hardware  文中( 18)式
+        SNDR_nonideal_df = min([(rho1*P1(p))/(P1(p)*rho1*kappa1^2 + N1),(rho2*P2(p))/(P2(p)*rho2*kappa2^2 + N2)]); %Non-ideal hardware文中（17）式
+        
+        
+        %分别针对六种情况判断是否发生中断，（AF四种，DF两种）检测条件： (if SNDR < x). 
+        %将中断次数存放到相应的变量中去。
+        for ind = 1:length(x)
+            
+            if SNDR_ideal_af_f < x(ind) %Fixed gain AF relaying, ideal hardware
+                OP_ideal_af_f(ind,p) = OP_ideal_af_f(ind,p) + 1;
+            end
+            
+            if SNDR_nonideal_af_f < x(ind) %Fixed gain AF relaying, non-ideal hardware
+                OP_nonideal_af_f(ind,p) = OP_nonideal_af_f(ind,p) + 1;
+            end
+            
+            if SNDR_ideal_af_v < x(ind) %Variable gain AF relaying, ideal hardware
+                OP_ideal_af_v(ind,p) = OP_ideal_af_v(ind,p) + 1;
+            end
+            
+            if SNDR_nonideal_af_v < x(ind) %Variable gain AF relaying, non-ideal hardware
+                OP_nonideal_af_v(ind,p) = OP_nonideal_af_v(ind,p) + 1;
+            end
+            
+            if SNDR_ideal_df < x(ind) %DF relaying, ideal hardware
+                OP_ideal_df(ind,p) = OP_ideal_df(ind,p) + 1;
+            end
+            
+            if SNDR_nonideal_df < x(ind) %DF relaying, non-ideal hardware
+                OP_nonideal_df(ind,p) = OP_nonideal_df(ind,p) + 1;
+            end
+        end
+        
+    end
+end
+```
